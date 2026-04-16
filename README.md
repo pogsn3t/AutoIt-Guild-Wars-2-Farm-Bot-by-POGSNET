@@ -48,5 +48,16 @@ A customizable, pixel-based automated combat and roaming bot for Guild Wars 2, w
    * **Click 3:** The red Out-of-Range line under Skill 1 (or press F2 to skip).
    * **Click 4:** The center of your Skill 2 icon while it is off cooldown.
 
+-- Known Issues
+*   1. May not kill totally the target
+*   2. May not be able to attack (some screen sizes not supported)
+
+### Support the Project
+If you find this project helpful, consider dropping a tip! Your donations keep the caffeine flowing and help me push out new updates. Thank you for your support!
+
+SOL: HeS2sPAha8xMJ7iyPYoeftm322VFZWQtFevG4zoKugDN
+
+You may contact me at pogsnet@gmail.com
+
 ## ⚠️ Disclaimer
 *This script interacts with the game client via simulated keystrokes and pixel reading. Use at your own risk. Automated gameplay may violate the Terms of Service for Guild Wars 2 and can result in account suspension.*

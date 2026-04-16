@@ -34,6 +34,10 @@ A customizable, pixel-based automated combat and roaming bot for Guild Wars 2, w
 ---
 
 ## ⚙️ Setup Instructions
+-- Reqirements:
+* **Windows based system
+* **AutoIt Program
+* **GW2 game
 
 1. Run the script.
 2. Adjust your skill hotkeys, cooldowns, and movement sliders.

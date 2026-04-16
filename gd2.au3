@@ -1,6 +1,6 @@
 ; ===================================================================
 ; POGS-GW2 Bot - Attack Priority & Defensive Retaliation
-; Version 1.0 Beta
+. Version 1.01 Beta
 ; ===================================================================
 
 #include <GUIConstantsEx.au3>
@@ -74,7 +74,7 @@ Global $skillKey[4], $skillEnabled[4], $skillCooldown[4], $skillCast[4]
 ; Initialization
 ; ----------------------------
 CreateGUI()
-LoadConfig()
+LoadConfig() ; <--- THIS AUTO-LOADS THE SETTINGS ON STARTUP
 HotKeySet("{PAUSE}", "TogglePause")
 HotKeySet("^q", "_Exit")
 
@@ -316,7 +316,6 @@ Func BotLogicPulse()
         $gLastTargetTimer = TimerInit() 
         $gRoamTimer = 0 
     Else
-        ; INCREASED DROPOFF TIMER TO 2.5 SECONDS to prevent losing target due to visual clutter
         If $gInCombat And TimerDiff($gLastTargetTimer) > 2500 Then
             $gInCombat = False 
             
@@ -444,7 +443,6 @@ EndFunc
 Func CaptureSetupPoints()
     UpdateStatus("Waiting for setup on screen...")
     
-    ; UPDATED INSTRUCTIONS TO PREVENT DROPPING COMBAT EARLY
     SplashTextOn("Setup (1 of 4)", "Target an Enemy." & @CRLF & "Left-Click the FAR LEFT edge of the RED health bar." & @CRLF & "(Keeps target locked until 1% HP)", 550, 80, -1, 50, 1)
     While Not _IsPressed("01")
         If _IsPressed("1B") Then 
@@ -514,7 +512,6 @@ Func UpdateStatus($msg)
 EndFunc
 
 Func HasTarget()
-    ; EXPANDED SEARCH AREA: Scans up to 150 pixels to the left to catch shrinking health bars
     PixelSearch($gTargetLeft[0]-150, $gTargetLeft[1]-5, $gTargetLeft[0]+15, $gTargetLeft[1]+5, $gTargetColor, $gColorVariance)
     Return (Not @error)
 EndFunc
@@ -680,33 +677,89 @@ Func TogglePause()
     EndIf
 EndFunc
 
+; ===================================================================
+; COMPLETELY REWRITTEN SAVE AND LOAD FUNCTIONS
+; ===================================================================
 Func SaveConfig()
+    ; Checkboxes
     IniWrite($SAVE_FILE, "Config", "AutoRoam", IsCtrlChecked($chkAutoRoam))
     IniWrite($SAVE_FILE, "Config", "MoveToOOR", IsCtrlChecked($chkMoveToOOR))
     IniWrite($SAVE_FILE, "Config", "Unstuck", IsCtrlChecked($chkUnstuck))
     IniWrite($SAVE_FILE, "Config", "WallDetect", IsCtrlChecked($chkWallDetect))
+    IniWrite($SAVE_FILE, "Config", "RotateOneDir", IsCtrlChecked($chkRotateOneDir))
+    IniWrite($SAVE_FILE, "Config", "PetMonitor", IsCtrlChecked($chkPet))
+
+    ; Text Inputs
     IniWrite($SAVE_FILE, "Config", "StuckSec", GUICtrlRead($inpStuckSec))
-    
+    IniWrite($SAVE_FILE, "Config", "TargetKey", GUICtrlRead($inpTargetKey))
+    IniWrite($SAVE_FILE, "Config", "HealKey", GUICtrlRead($inpHealKey))
+    IniWrite($SAVE_FILE, "Config", "ColorVar", GUICtrlRead($inpVariance))
+
+    ; Radio Priority
     If GUICtrlRead($radPriorityNearest) = $GUI_CHECKED Then
         IniWrite($SAVE_FILE, "Config", "Priority", "1")
     Else
         IniWrite($SAVE_FILE, "Config", "Priority", "2")
     EndIf
+
+    ; Sliders
+    IniWrite($SAVE_FILE, "Config", "TurnTime", GUICtrlRead($sliderTurn))
+    IniWrite($SAVE_FILE, "Config", "MoveTime", GUICtrlRead($sliderMove))
+    IniWrite($SAVE_FILE, "Config", "FleeHP", GUICtrlRead($sliderHealth))
+    IniWrite($SAVE_FILE, "Config", "PetHP", GUICtrlRead($sliderPet))
+    IniWrite($SAVE_FILE, "Config", "LagDelay", GUICtrlRead($sliderLag))
+    IniWrite($SAVE_FILE, "Config", "PauseMode", GUICtrlRead($sliderPause))
+
+    ; Skills Grid
+    For $i = 0 To 3
+        IniWrite($SAVE_FILE, "Skills", "Enabled_" & $i, GUICtrlRead($skillEnabled[$i]))
+        IniWrite($SAVE_FILE, "Skills", "CD_" & $i, GUICtrlRead($skillCooldown[$i]))
+        IniWrite($SAVE_FILE, "Skills", "Cast_" & $i, GUICtrlRead($skillCast[$i]))
+        IniWrite($SAVE_FILE, "Skills", "Key_" & $i, GUICtrlRead($skillKey[$i]))
+    Next
     
     UpdateStatus("Settings Saved to ESBsave.ini!")
 EndFunc
 
 Func LoadConfig()
     If Not FileExists($SAVE_FILE) Then Return
+    
+    ; Checkboxes
     If IniRead($SAVE_FILE, "Config", "AutoRoam", "0") = "1" Then GUICtrlSetState($chkAutoRoam, $GUI_CHECKED)
     If IniRead($SAVE_FILE, "Config", "MoveToOOR", "0") = "1" Then GUICtrlSetState($chkMoveToOOR, $GUI_CHECKED)
     If IniRead($SAVE_FILE, "Config", "Unstuck", "0") = "1" Then GUICtrlSetState($chkUnstuck, $GUI_CHECKED)
     If IniRead($SAVE_FILE, "Config", "WallDetect", "0") = "1" Then GUICtrlSetState($chkWallDetect, $GUI_CHECKED)
+    If IniRead($SAVE_FILE, "Config", "RotateOneDir", "0") = "1" Then GUICtrlSetState($chkRotateOneDir, $GUI_CHECKED)
+    If IniRead($SAVE_FILE, "Config", "PetMonitor", "0") = "1" Then GUICtrlSetState($chkPet, $GUI_CHECKED)
+
+    ; Text Inputs
     GUICtrlSetData($inpStuckSec, IniRead($SAVE_FILE, "Config", "StuckSec", "10"))
-    
+    GUICtrlSetData($inpTargetKey, IniRead($SAVE_FILE, "Config", "TargetKey", "TAB"))
+    GUICtrlSetData($inpHealKey, IniRead($SAVE_FILE, "Config", "HealKey", "6"))
+    GUICtrlSetData($inpVariance, IniRead($SAVE_FILE, "Config", "ColorVar", "15"))
+
+    ; Radio Priority
     If IniRead($SAVE_FILE, "Config", "Priority", "1") = "2" Then
         GUICtrlSetState($radPriorityAttacker, $GUI_CHECKED)
+    Else
+        GUICtrlSetState($radPriorityNearest, $GUI_CHECKED)
     EndIf
+
+    ; Sliders
+    GUICtrlSetData($sliderTurn, IniRead($SAVE_FILE, "Config", "TurnTime", "0"))
+    GUICtrlSetData($sliderMove, IniRead($SAVE_FILE, "Config", "MoveTime", "0"))
+    GUICtrlSetData($sliderHealth, IniRead($SAVE_FILE, "Config", "FleeHP", "0"))
+    GUICtrlSetData($sliderPet, IniRead($SAVE_FILE, "Config", "PetHP", "0"))
+    GUICtrlSetData($sliderLag, IniRead($SAVE_FILE, "Config", "LagDelay", "100"))
+    GUICtrlSetData($sliderPause, IniRead($SAVE_FILE, "Config", "PauseMode", "1"))
+
+    ; Skills Grid
+    For $i = 0 To 3
+        GUICtrlSetData($skillEnabled[$i], IniRead($SAVE_FILE, "Skills", "Enabled_" & $i, "0"))
+        GUICtrlSetData($skillCooldown[$i], IniRead($SAVE_FILE, "Skills", "CD_" & $i, "0"))
+        GUICtrlSetData($skillCast[$i], IniRead($SAVE_FILE, "Skills", "Cast_" & $i, "0"))
+        GUICtrlSetData($skillKey[$i], IniRead($SAVE_FILE, "Skills", "Key_" & $i, String($i + 1)))
+    Next
 EndFunc
 
 Func IsCtrlChecked($c)
